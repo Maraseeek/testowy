@@ -27,23 +27,23 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* ========== TRYB CIEMNY (DOMYŚLNY) ========== */
+    /* ========== TRYB CIEMNY (DOMYŚLNY) - PROFESJONALNA PALETA ========== */
     
-    /* Tło aplikacji - gradient przemysłowy */
+    /* Tło aplikacji - głęboki granat */
     .stApp {
-        background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+        background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
     }
     
     /* Sidebar - panel kontrolny */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #161b26 0%, #0d111c 100%);
-        border-right: 2px solid #2a3142;
+        background: linear-gradient(180deg, #13181f 0%, #0a0d12 100%);
+        border-right: 2px solid #1e2532;
     }
     
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2, 
     [data-testid="stSidebar"] h3 {
-        color: #4a9eff !important;
+        color: #60a5fa !important;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -51,23 +51,23 @@ st.markdown("""
     
     /* Metryki - status indicators */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #1e2533 0%, #252d3d 100%);
+        background: linear-gradient(135deg, #1e2532 0%, #252d3f 100%);
         border: 2px solid #2d3748;
-        border-left: 4px solid #4a9eff;
+        border-left: 4px solid #3b82f6;
         padding: 20px;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         transition: all 0.3s ease;
     }
     
     div[data-testid="stMetric"]:hover {
-        border-left-color: #60b0ff;
-        box-shadow: 0 6px 12px rgba(74, 158, 255, 0.2);
+        border-left-color: #60a5fa;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
         transform: translateY(-2px);
     }
     
     div[data-testid="stMetricLabel"] {
-        color: #8b95a8 !important;
+        color: #9ca3af !important;
         font-size: 0.85rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -75,7 +75,7 @@ st.markdown("""
     }
 
     div[data-testid="stMetricValue"] {
-        color: #ffffff !important;
+        color: #f9fafb !important;
         font-family: 'JetBrains Mono', monospace;
         font-size: 2rem !important;
         font-weight: 700;
@@ -83,16 +83,16 @@ st.markdown("""
     
     /* Kontenery z ramką */
     div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: linear-gradient(135deg, #1a1f2e 0%, #23293a 100%);
+        background: linear-gradient(135deg, #1a1f2e 0%, #252d3f 100%);
         border: 2px solid #2d3748;
         border-radius: 8px;
         padding: 20px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
     
     /* Pasek postępu - wielokolorowy system */
     .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, #4a9eff 0%, #60b0ff 100%);
+        background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
         border-radius: 4px;
     }
     
@@ -109,55 +109,55 @@ st.markdown("""
     }
     
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%) !important;
-        border-color: #4a9eff !important;
-        box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         color: #ffffff !important;
     }
     
     .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #60b0ff 0%, #4a9eff 100%) !important;
-        box-shadow: 0 6px 16px rgba(74, 158, 255, 0.5);
+        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
         transform: translateY(-2px);
     }
     
     .stButton > button[kind="secondary"] {
         background: transparent !important;
-        border-color: #4a9eff !important;
-        color: #4a9eff !important;
+        border-color: #3b82f6 !important;
+        color: #60a5fa !important;
     }
     
     .stButton > button[kind="secondary"]:hover {
-        background: rgba(74, 158, 255, 0.1) !important;
-        border-color: #60b0ff !important;
+        background: rgba(59, 130, 246, 0.15) !important;
+        border-color: #60a5fa !important;
     }
     
     /* Nagłówki - hierarchia wizualna */
     h1, h2, h3 {
-        color: #ffffff !important;
+        color: #f9fafb !important;
         font-weight: 700 !important;
     }
     
     h1 {
         font-size: 2.5rem !important;
-        border-bottom: 3px solid #4a9eff;
+        border-bottom: 3px solid #3b82f6;
         padding-bottom: 10px;
         margin-bottom: 30px !important;
     }
     
     h2 {
         font-size: 1.8rem !important;
-        color: #4a9eff !important;
+        color: #60a5fa !important;
         margin-top: 20px !important;
     }
     
     h3 {
         font-size: 1.3rem !important;
-        color: #60b0ff !important;
+        color: #93c5fd !important;
     }
     
     h4 {
-        color: #8b95a8 !important;
+        color: #9ca3af !important;
         font-size: 1.1rem !important;
         font-weight: 600 !important;
         text-transform: uppercase;
@@ -172,13 +172,13 @@ st.markdown("""
     }
     
     thead tr th {
-        background: linear-gradient(135deg, #2d3748 0%, #3d4758 100%) !important;
-        color: #4a9eff !important;
+        background: linear-gradient(135deg, #2d3748 0%, #374151 100%) !important;
+        color: #60a5fa !important;
         font-weight: 700 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 15px !important;
-        border-bottom: 2px solid #4a9eff !important;
+        border-bottom: 2px solid #3b82f6 !important;
     }
     
     tbody tr {
@@ -187,13 +187,13 @@ st.markdown("""
     }
     
     tbody tr:hover {
-        background-color: #23293a !important;
-        box-shadow: inset 0 0 0 2px #4a9eff;
+        background-color: #252d3f !important;
+        box-shadow: inset 0 0 0 2px #3b82f6;
     }
     
     tbody tr td {
         padding: 12px !important;
-        color: #e2e8f0 !important;
+        color: #e5e7eb !important;
         border-bottom: 1px solid #2d3748 !important;
     }
     
@@ -221,8 +221,8 @@ st.markdown("""
     }
     
     div[data-baseweb="notification"][kind="info"] {
-        background-color: rgba(74, 158, 255, 0.15) !important;
-        border-left-color: #4a9eff !important;
+        background-color: rgba(59, 130, 246, 0.15) !important;
+        border-left-color: #3b82f6 !important;
     }
     
     /* Input fields */
@@ -232,14 +232,14 @@ st.markdown("""
         background-color: #1a1f2e !important;
         border: 2px solid #2d3748 !important;
         border-radius: 6px !important;
-        color: #ffffff !important;
+        color: #f9fafb !important;
         padding: 10px !important;
     }
     
     .stTextInput > div > div > input:focus,
     .stNumberInput > div > div > input:focus {
-        border-color: #4a9eff !important;
-        box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
     }
     
     /* Calendar Heatmap */
@@ -259,18 +259,18 @@ st.markdown("""
     
     .calendar-day:hover {
         transform: scale(1.1);
-        box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
     }
     
-    .day-0 { background-color: #1a1f2e; color: #4a5568; }
+    .day-0 { background-color: #1a1f2e; color: #4b5563; }
     .day-1 { background-color: #1e3a5f; color: #93c5fd; }
     .day-2 { background-color: #2563eb; color: #ffffff; }
     .day-3 { background-color: #1d4ed8; color: #ffffff; }
     .day-4 { background-color: #1e40af; color: #ffffff; }
     .day-5 { background-color: #1e3a8a; color: #ffffff; }
-    .day-6 { background-color: #ef4444; color: #ffffff; font-weight: 700; }
+    .day-6 { background-color: #dc2626; color: #ffffff; font-weight: 700; }
     
-    .day-weekend { background-color: #0f1419; color: #4a5568; opacity: 0.5; }
+    .day-weekend { background-color: #111827; color: #4b5563; opacity: 0.5; }
     .day-today { border: 3px solid #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.6); }
     
     /* Status badges */
@@ -285,20 +285,20 @@ st.markdown("""
     }
     
     .badge-critical {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-        border: 2px solid #ef4444;
+        background-color: rgba(220, 38, 38, 0.2);
+        color: #f87171;
+        border: 2px solid #dc2626;
     }
     
     .badge-warning {
-        background-color: rgba(251, 191, 36, 0.2);
+        background-color: rgba(245, 158, 11, 0.2);
         color: #fbbf24;
-        border: 2px solid #fbbf24;
+        border: 2px solid #f59e0b;
     }
     
     .badge-ok {
         background-color: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
+        color: #4ade80;
         border: 2px solid #22c55e;
     }
     
@@ -311,7 +311,7 @@ st.markdown("""
     
     /* Tooltips i caption */
     .stCaption {
-        color: #8b95a8 !important;
+        color: #9ca3af !important;
         font-size: 0.85rem !important;
     }
     
@@ -326,8 +326,8 @@ st.markdown("""
     }
     
     div[role="radiogroup"] label:hover {
-        border-color: #4a9eff !important;
-        background-color: #23293a !important;
+        border-color: #3b82f6 !important;
+        background-color: #252d3f !important;
     }
     
     /* Expander */
@@ -336,11 +336,11 @@ st.markdown("""
         border: 2px solid #2d3748 !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
-        color: #ffffff !important;
+        color: #f9fafb !important;
     }
     
     .streamlit-expanderHeader:hover {
-        border-color: #4a9eff !important;
+        border-color: #3b82f6 !important;
     }
     
     /* Tabs */
@@ -355,56 +355,89 @@ st.markdown("""
         border-radius: 6px 6px 0 0;
         padding: 12px 24px;
         font-weight: 600;
-        color: #8b95a8;
+        color: #9ca3af;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: #23293a;
-        border-color: #4a9eff;
+        background-color: #252d3f;
+        border-color: #3b82f6;
         border-bottom: none;
-        color: #4a9eff;
+        color: #60a5fa;
     }
     
-    /* ========== TRYB JASNY ========== */
+    /* ========== TRYB JASNY - PROFESJONALNA PALETA ========== */
     @media (prefers-color-scheme: light) {
         .stApp {
-            background: linear-gradient(135deg, #e8edf5 0%, #f5f7fa 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
         }
         
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
-            border-right: 2px solid #cbd5e0;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-right: 2px solid #e2e8f0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
         }
         
         [data-testid="stSidebar"] h1, 
         [data-testid="stSidebar"] h2, 
         [data-testid="stSidebar"] h3 {
-            color: #2563eb !important;
+            color: #1d4ed8 !important;
         }
         
         div[data-testid="stMetric"] {
-            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-            border: 2px solid #cbd5e0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #e2e8f0;
             border-left: 4px solid #2563eb;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        div[data-testid="stMetric"]:hover {
+            border-left-color: #1d4ed8;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
         
         div[data-testid="stMetricLabel"] {
-            color: #4a5568 !important;
+            color: #64748b !important;
         }
         
         div[data-testid="stMetricValue"] {
-            color: #1a202c !important;
+            color: #0f172a !important;
         }
         
         div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
-            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-            border: 2px solid #cbd5e0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .stProgress > div > div > div > div {
+            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+        }
+        
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            color: #ffffff !important;
+        }
+        
+        .stButton > button[kind="primary"]:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        }
+        
+        .stButton > button[kind="secondary"] {
+            background: transparent !important;
+            border-color: #2563eb !important;
+            color: #1d4ed8 !important;
+        }
+        
+        .stButton > button[kind="secondary"]:hover {
+            background: rgba(37, 99, 235, 0.08) !important;
+            border-color: #1d4ed8 !important;
         }
         
         h1, h2, h3 {
-            color: #1a202c !important;
+            color: #0f172a !important;
         }
         
         h1 {
@@ -412,24 +445,24 @@ st.markdown("""
         }
         
         h2 {
-            color: #2563eb !important;
+            color: #1d4ed8 !important;
         }
         
         h3 {
-            color: #3b82f6 !important;
+            color: #2563eb !important;
         }
         
         h4 {
-            color: #4a5568 !important;
+            color: #475569 !important;
         }
         
         .stDataFrame {
-            border: 2px solid #cbd5e0 !important;
+            border: 2px solid #e2e8f0 !important;
         }
         
         thead tr th {
-            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%) !important;
-            color: #2563eb !important;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+            color: #1d4ed8 !important;
             border-bottom: 2px solid #2563eb !important;
         }
         
@@ -438,34 +471,54 @@ st.markdown("""
         }
         
         tbody tr:hover {
-            background-color: #f7fafc !important;
-            box-shadow: inset 0 0 0 2px #3b82f6;
+            background-color: #f8fafc !important;
+            box-shadow: inset 0 0 0 2px #2563eb;
         }
         
         tbody tr td {
-            color: #2d3748 !important;
-            border-bottom: 1px solid #e2e8f0 !important;
+            color: #1e293b !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+        }
+        
+        div[data-baseweb="notification"][kind="error"] {
+            background-color: rgba(220, 38, 38, 0.08) !important;
+            border-left-color: #dc2626 !important;
+        }
+        
+        div[data-baseweb="notification"][kind="warning"] {
+            background-color: rgba(245, 158, 11, 0.08) !important;
+            border-left-color: #f59e0b !important;
+        }
+        
+        div[data-baseweb="notification"][kind="success"] {
+            background-color: rgba(34, 197, 94, 0.08) !important;
+            border-left-color: #22c55e !important;
+        }
+        
+        div[data-baseweb="notification"][kind="info"] {
+            background-color: rgba(37, 99, 235, 0.08) !important;
+            border-left-color: #2563eb !important;
         }
         
         .stTextInput > div > div > input,
         .stNumberInput > div > div > input,
         .stSelectbox > div > div > div {
             background-color: #ffffff !important;
-            border: 2px solid #cbd5e0 !important;
-            color: #1a202c !important;
+            border: 2px solid #e2e8f0 !important;
+            color: #0f172a !important;
         }
         
         .stTextInput > div > div > input:focus,
         .stNumberInput > div > div > input:focus {
             border-color: #2563eb !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
         }
         
         .calendar-day {
-            border: 1px solid #cbd5e0;
+            border: 1px solid #e2e8f0;
         }
         
-        .day-0 { background-color: #f7fafc; color: #4a5568; }
+        .day-0 { background-color: #f8fafc; color: #64748b; }
         .day-1 { background-color: #dbeafe; color: #1e40af; }
         .day-2 { background-color: #93c5fd; color: #1e3a8a; }
         .day-3 { background-color: #60a5fa; color: #ffffff; }
@@ -473,26 +526,48 @@ st.markdown("""
         .day-5 { background-color: #2563eb; color: #ffffff; }
         .day-6 { background-color: #dc2626; color: #ffffff; font-weight: 700; }
         
-        .day-weekend { background-color: #e2e8f0; color: #718096; opacity: 0.7; }
+        .day-weekend { background-color: #f1f5f9; color: #94a3b8; opacity: 0.7; }
+        
+        .badge-critical {
+            background-color: rgba(220, 38, 38, 0.15);
+            color: #dc2626;
+            border: 2px solid #dc2626;
+        }
+        
+        .badge-warning {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 2px solid #f59e0b;
+        }
+        
+        .badge-ok {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+            border: 2px solid #22c55e;
+        }
+        
+        hr {
+            border-top: 2px solid #e2e8f0;
+        }
         
         .stCaption {
-            color: #4a5568 !important;
+            color: #64748b !important;
         }
         
         div[role="radiogroup"] label {
             background-color: #ffffff !important;
-            border: 2px solid #cbd5e0 !important;
+            border: 2px solid #e2e8f0 !important;
         }
         
         div[role="radiogroup"] label:hover {
             border-color: #2563eb !important;
-            background-color: #f7fafc !important;
+            background-color: #f8fafc !important;
         }
         
         .streamlit-expanderHeader {
             background-color: #ffffff !important;
-            border: 2px solid #cbd5e0 !important;
-            color: #1a202c !important;
+            border: 2px solid #e2e8f0 !important;
+            color: #0f172a !important;
         }
         
         .streamlit-expanderHeader:hover {
@@ -501,18 +576,14 @@ st.markdown("""
         
         .stTabs [data-baseweb="tab"] {
             background-color: #ffffff;
-            border: 2px solid #cbd5e0;
-            color: #4a5568;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
         }
         
         .stTabs [aria-selected="true"] {
-            background-color: #f7fafc;
+            background-color: #f8fafc;
             border-color: #2563eb;
-            color: #2563eb;
-        }
-        
-        hr {
-            border-top: 2px solid #cbd5e0;
+            color: #1d4ed8;
         }
     }
     </style>
@@ -893,7 +964,7 @@ def render_calendar_heatmap(machine, year=None, month=None):
     
     html = f"""
     <div style='background: #1a1f2e; padding: 20px; border-radius: 8px; border: 2px solid #2d3748;'>
-        <h4 style='color: #4a9eff; text-align: center; margin-bottom: 20px;'>{month_name} {year}</h4>
+        <h4 style='color: #60a5fa; text-align: center; margin-bottom: 20px;'>{month_name} {year}</h4>
         <div style='text-align: center;'>
     """
     
@@ -901,7 +972,7 @@ def render_calendar_heatmap(machine, year=None, month=None):
     days_header = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd']
     html += "<div style='margin-bottom: 10px;'>"
     for day_name in days_header:
-        html += f"<span style='display: inline-block; width: 35px; color: #8b95a8; font-size: 0.8rem; font-weight: 600;'>{day_name}</span>"
+        html += f"<span style='display: inline-block; width: 35px; color: #9ca3af; font-size: 0.8rem; font-weight: 600;'>{day_name}</span>"
     html += "</div>"
     
     # Renderuj kalendarz
@@ -943,11 +1014,11 @@ def render_calendar_heatmap(machine, year=None, month=None):
     html += """
         </div>
         <div style='margin-top: 20px; text-align: center;'>
-            <small style='color: #8b95a8;'>
+            <small style='color: #9ca3af;'>
                 <span style='color: #1e3a5f;'>█</span> 1 cykl &nbsp;
                 <span style='color: #2563eb;'>█</span> 2 cykle &nbsp;
                 <span style='color: #1e40af;'>█</span> 3-4 &nbsp;
-                <span style='color: #ef4444;'>█</span> 5+ &nbsp;
+                <span style='color: #dc2626;'>█</span> 5+ &nbsp;
                 <span style='border: 2px solid #fbbf24; padding: 2px 6px;'>⬜</span> Dziś
             </small>
         </div>
@@ -1243,7 +1314,7 @@ elif view == "🔧 Karta Maszyny":
                     st.rerun()
             
             with col_month_nav[1]:
-                st.markdown(f"<p style='text-align: center; color: #4a9eff; font-weight: 600;'>{calendar.month_name[st.session_state.calendar_month]} {st.session_state.calendar_year}</p>", unsafe_allow_html=True)
+                st.markdown(f"<p style='text-align: center; color: #60a5fa; font-weight: 600;'>{calendar.month_name[st.session_state.calendar_month]} {st.session_state.calendar_year}</p>", unsafe_allow_html=True)
             
             with col_month_nav[2]:
                 if st.button("Następny ▶", key="next_month"):
@@ -1922,10 +1993,10 @@ elif view == "📊 Historia":
 st.markdown("---")
 st.markdown("""
     <div style='text-align: center; padding: 20px 0;'>
-        <p style='color: #8b95a8; font-size: 0.9rem; margin: 0;'>
+        <p style='color: #9ca3af; font-size: 0.9rem; margin: 0;'>
             🔧 <strong>Warsztat Ziołolek</strong> - System Utrzymania Ruchu
         </p>
-        <p style='color: #4a9eff; font-size: 0.85rem; margin: 5px 0 0 0;'>
+        <p style='color: #60a5fa; font-size: 0.85rem; margin: 5px 0 0 0;'>
             Profesjonalne zarządzanie parkiem maszynowym | © 2026
         </p>
     </div>
