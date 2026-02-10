@@ -27,6 +27,8 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
+    /* ========== TRYB CIEMNY (DOMYŚLNY) ========== */
+    
     /* Tło aplikacji - gradient przemysłowy */
     .stApp {
         background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
@@ -110,6 +112,7 @@ st.markdown("""
         background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%) !important;
         border-color: #4a9eff !important;
         box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        color: #ffffff !important;
     }
     
     .stButton > button[kind="primary"]:hover {
@@ -333,6 +336,7 @@ st.markdown("""
         border: 2px solid #2d3748 !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
+        color: #ffffff !important;
     }
     
     .streamlit-expanderHeader:hover {
@@ -359,6 +363,157 @@ st.markdown("""
         border-color: #4a9eff;
         border-bottom: none;
         color: #4a9eff;
+    }
+    
+    /* ========== TRYB JASNY ========== */
+    @media (prefers-color-scheme: light) {
+        .stApp {
+            background: linear-gradient(135deg, #e8edf5 0%, #f5f7fa 100%);
+        }
+        
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+            border-right: 2px solid #cbd5e0;
+        }
+        
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3 {
+            color: #2563eb !important;
+        }
+        
+        div[data-testid="stMetric"] {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            border: 2px solid #cbd5e0;
+            border-left: 4px solid #2563eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        div[data-testid="stMetricLabel"] {
+            color: #4a5568 !important;
+        }
+        
+        div[data-testid="stMetricValue"] {
+            color: #1a202c !important;
+        }
+        
+        div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            border: 2px solid #cbd5e0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1, h2, h3 {
+            color: #1a202c !important;
+        }
+        
+        h1 {
+            border-bottom: 3px solid #2563eb;
+        }
+        
+        h2 {
+            color: #2563eb !important;
+        }
+        
+        h3 {
+            color: #3b82f6 !important;
+        }
+        
+        h4 {
+            color: #4a5568 !important;
+        }
+        
+        .stDataFrame {
+            border: 2px solid #cbd5e0 !important;
+        }
+        
+        thead tr th {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%) !important;
+            color: #2563eb !important;
+            border-bottom: 2px solid #2563eb !important;
+        }
+        
+        tbody tr {
+            background-color: #ffffff !important;
+        }
+        
+        tbody tr:hover {
+            background-color: #f7fafc !important;
+            box-shadow: inset 0 0 0 2px #3b82f6;
+        }
+        
+        tbody tr td {
+            color: #2d3748 !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        
+        .stTextInput > div > div > input,
+        .stNumberInput > div > div > input,
+        .stSelectbox > div > div > div {
+            background-color: #ffffff !important;
+            border: 2px solid #cbd5e0 !important;
+            color: #1a202c !important;
+        }
+        
+        .stTextInput > div > div > input:focus,
+        .stNumberInput > div > div > input:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+        }
+        
+        .calendar-day {
+            border: 1px solid #cbd5e0;
+        }
+        
+        .day-0 { background-color: #f7fafc; color: #4a5568; }
+        .day-1 { background-color: #dbeafe; color: #1e40af; }
+        .day-2 { background-color: #93c5fd; color: #1e3a8a; }
+        .day-3 { background-color: #60a5fa; color: #ffffff; }
+        .day-4 { background-color: #3b82f6; color: #ffffff; }
+        .day-5 { background-color: #2563eb; color: #ffffff; }
+        .day-6 { background-color: #dc2626; color: #ffffff; font-weight: 700; }
+        
+        .day-weekend { background-color: #e2e8f0; color: #718096; opacity: 0.7; }
+        
+        .stCaption {
+            color: #4a5568 !important;
+        }
+        
+        div[role="radiogroup"] label {
+            background-color: #ffffff !important;
+            border: 2px solid #cbd5e0 !important;
+        }
+        
+        div[role="radiogroup"] label:hover {
+            border-color: #2563eb !important;
+            background-color: #f7fafc !important;
+        }
+        
+        .streamlit-expanderHeader {
+            background-color: #ffffff !important;
+            border: 2px solid #cbd5e0 !important;
+            color: #1a202c !important;
+        }
+        
+        .streamlit-expanderHeader:hover {
+            border-color: #2563eb !important;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e0;
+            color: #4a5568;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background-color: #f7fafc;
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        
+        hr {
+            border-top: 2px solid #cbd5e0;
+        }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -638,8 +793,6 @@ if 'unsaved_changes' not in st.session_state:
     st.session_state.unsaved_changes = False
 if 'config_authenticated' not in st.session_state:
     st.session_state.config_authenticated = False
-if 'current_view' not in st.session_state:
-    st.session_state.current_view = "🏠 Panel Główny"
 if 'selected_machine' not in st.session_state:
     st.session_state.selected_machine = None
 if 'calendar_month' not in st.session_state:
@@ -808,19 +961,11 @@ st.sidebar.markdown("### 🔧 WARSZTAT ZIOŁOLEK")
 st.sidebar.markdown("#### System Utrzymania Ruchu")
 st.sidebar.markdown("---")
 
-# Callback do zmiany widoku
-def change_view():
-    st.session_state.current_view = st.session_state.view_radio
-
 view_options = ["🏠 Panel Główny", "🔧 Karta Maszyny", "📄 Dokumentacja", "⚙️ Konfiguracja", "📊 Historia"]
-current_index = view_options.index(st.session_state.current_view) if st.session_state.current_view in view_options else 0
 
 view = st.sidebar.radio(
     "NAWIGACJA",
     view_options,
-    index=current_index,
-    key="view_radio",
-    on_change=change_view,
     label_visibility="visible"
 )
 
@@ -828,15 +973,21 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Data systemu:** {datetime.now().strftime('%d.%m.%Y')}")
 st.sidebar.markdown(f"**Godzina:** {datetime.now().strftime('%H:%M:%S')}")
 
-# Liczniki alertów
+# POPRAWIONE LICZNIKI ALERTÓW - zliczają wszystkie interwały, nie tylko maszyny
 critical_count = 0
 warning_count = 0
 for machine in st.session_state.data['machines']:
-    status, _ = get_machine_critical_status(machine)
-    if status == 2:
-        critical_count += 1
-    elif status == 1:
-        warning_count += 1
+    for interval_data in machine.get('service_intervals', []):
+        if interval_data.get('enabled', True):
+            try:
+                interval = ServiceInterval(**interval_data)
+                status = interval.get_status()
+                if status == 2:
+                    critical_count += 1
+                elif status == 1:
+                    warning_count += 1
+            except:
+                pass
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("#### STATUS FLOTY")
@@ -875,13 +1026,16 @@ if view == "🏠 Panel Główny":
         
         for machine in st.session_state.data['machines']:
             for interval_data in machine['service_intervals']:
-                interval = ServiceInterval(**interval_data)
-                status = interval.get_status()
-                
-                if status == 2:
-                    alerts_critical.append(f"**{machine['name']}** - {interval.name}")
-                elif status == 1:
-                    alerts_warning.append(f"**{machine['name']}** - {interval.name}")
+                try:
+                    interval = ServiceInterval(**interval_data)
+                    status = interval.get_status()
+                    
+                    if status == 2:
+                        alerts_critical.append(f"**{machine['name']}** - {interval.name}")
+                    elif status == 1:
+                        alerts_warning.append(f"**{machine['name']}** - {interval.name}")
+                except:
+                    pass
         
         # Wyświetlanie alertów
         col_alert1, col_alert2 = st.columns(2)
@@ -910,7 +1064,21 @@ if view == "🏠 Panel Główny":
         col1, col2, col3, col4 = st.columns(4)
         
         total_machines = len(st.session_state.data['machines'])
-        machines_ok = total_machines - critical_count - warning_count
+        
+        # Liczba maszyn bez alertów
+        machines_with_alerts = set()
+        for machine in st.session_state.data['machines']:
+            for interval_data in machine.get('service_intervals', []):
+                if interval_data.get('enabled', True):
+                    try:
+                        interval = ServiceInterval(**interval_data)
+                        status = interval.get_status()
+                        if status > 0:
+                            machines_with_alerts.add(machine['id'])
+                    except:
+                        pass
+        
+        machines_ok = total_machines - len(machines_with_alerts)
         
         col1.metric("Maszyny w systemie", total_machines, delta=None)
         col2.metric("Stan sprawny", machines_ok, delta="OK" if machines_ok == total_machines else None)
@@ -947,34 +1115,31 @@ if view == "🏠 Panel Główny":
                         
                         for interval_data in machine['service_intervals']:
                             if interval_data['enabled']:
-                                interval = ServiceInterval(**interval_data)
-                                status = interval.get_status()
-                                progress = interval.get_progress()
-                                
-                                col_label, col_value = st.columns([2, 1])
-                                col_label.caption(interval.name)
-                                
-                                if interval.type == 'cycles':
-                                    col_value.write(f"{interval.current_value}/{interval.interval}")
-                                else:
-                                    last = datetime.strptime(interval.last_service, "%Y-%m-%d").date()
-                                    next_date = add_months(last, interval.interval)
-                                    days = (next_date - datetime.now().date()).days
-                                    col_value.write(f"{days} dni")
-                                
-                                # Pasek postępu z kolorem
-                                progress_color = get_status_color(status)
-                                st.progress(progress)
+                                try:
+                                    interval = ServiceInterval(**interval_data)
+                                    status = interval.get_status()
+                                    progress = interval.get_progress()
+                                    
+                                    col_label, col_value = st.columns([2, 1])
+                                    col_label.caption(interval.name)
+                                    
+                                    if interval.type == 'cycles':
+                                        col_value.write(f"{interval.current_value}/{interval.interval}")
+                                    else:
+                                        last = datetime.strptime(interval.last_service, "%Y-%m-%d").date()
+                                        next_date = add_months(last, interval.interval)
+                                        days = (next_date - datetime.now().date()).days
+                                        col_value.write(f"{days} dni")
+                                    
+                                    # Pasek postępu z kolorem
+                                    progress_color = get_status_color(status)
+                                    st.progress(progress)
+                                except:
+                                    pass
                     else:
                         st.caption("Brak skonfigurowanych interwałów")
                     
                     st.markdown("")
-                    
-                    # Przycisk akcji - NAPRAWIONY
-                    if st.button(f"Otwórz kartę", key=f"open_{machine['id']}", use_container_width=True, type="primary"):
-                        st.session_state.selected_machine = machine['id']
-                        st.session_state.current_view = "🔧 Karta Maszyny"
-                        st.rerun()
 
 # --- WIDOK 2: KARTA MASZYNY ---
 elif view == "🔧 Karta Maszyny":
@@ -1002,7 +1167,8 @@ elif view == "🔧 Karta Maszyny":
             "**Wybierz maszynę:**", 
             list(machine_options.keys()), 
             index=default_index,
-            help="Wpisz nazwę hali aby odfiltrować maszyny"
+            help="Wpisz nazwę hali aby odfiltrować maszyny",
+            key="machine_selector"
         )
         
         selected_machine_id = machine_options[selected_display]
@@ -1046,15 +1212,18 @@ elif view == "🔧 Karta Maszyny":
                 if len(machine['service_intervals']) > 0:
                     for interval_data in machine['service_intervals']:
                         if interval_data['enabled']:
-                            interval = ServiceInterval(**interval_data)
-                            status = interval.get_status()
-                            
-                            button_label = f"🛠️ {interval.name}"
-                            
-                            if st.button(button_label, key=f"reset_{machine['id']}_{interval.name}", use_container_width=True, type="primary" if status == 2 else "secondary"):
-                                reset_service_interval(machine['id'], interval.name)
-                                st.success(f"Wykonano: {interval.name}")
-                                st.rerun()
+                            try:
+                                interval = ServiceInterval(**interval_data)
+                                status = interval.get_status()
+                                
+                                button_label = f"🛠️ {interval.name}"
+                                
+                                if st.button(button_label, key=f"reset_{machine['id']}_{interval.name}", use_container_width=True, type="primary" if status == 2 else "secondary"):
+                                    reset_service_interval(machine['id'], interval.name)
+                                    st.success(f"Wykonano: {interval.name}")
+                                    st.rerun()
+                            except:
+                                pass
                 else:
                     st.caption("Brak skonfigurowanych interwałów")
         
@@ -1108,38 +1277,41 @@ elif view == "🔧 Karta Maszyny":
                 # Szczegółowy widok każdego interwału
                 for interval_data in machine['service_intervals']:
                     if interval_data['enabled']:
-                        interval = ServiceInterval(**interval_data)
-                        status = interval.get_status()
-                        progress = interval.get_progress()
-                        
-                        with st.expander(f"**{interval.name}** - {get_status_label(status)}", expanded=(status == 2)):
-                            col_a, col_b = st.columns(2)
+                        try:
+                            interval = ServiceInterval(**interval_data)
+                            status = interval.get_status()
+                            progress = interval.get_progress()
                             
-                            with col_a:
-                                if interval.type == 'cycles':
-                                    st.metric("Aktualny stan", f"{interval.current_value}/{interval.interval} cykli")
+                            with st.expander(f"**{interval.name}** - {get_status_label(status)}", expanded=(status == 2)):
+                                col_a, col_b = st.columns(2)
+                                
+                                with col_a:
+                                    if interval.type == 'cycles':
+                                        st.metric("Aktualny stan", f"{interval.current_value}/{interval.interval} cykli")
+                                        remaining = interval.interval - interval.current_value
+                                        st.metric("Pozostało", f"{remaining} cykli")
+                                    else:
+                                        last = datetime.strptime(interval.last_service, "%Y-%m-%d").date()
+                                        next_date = add_months(last, interval.interval)
+                                        days = (next_date - datetime.now().date()).days
+                                        st.metric("Następny termin", next_date.strftime("%d.%m.%Y"))
+                                        st.metric("Pozostało", f"{days} dni")
+                                
+                                with col_b:
+                                    st.metric("Ostatni serwis", interval.last_service)
+                                    st.metric("Status", get_status_label(status))
+                                
+                                st.progress(progress)
+                                
+                                # Prognoza
+                                if interval.type == 'cycles' and machine['avg_daily_cycles'] > 0:
                                     remaining = interval.interval - interval.current_value
-                                    st.metric("Pozostało", f"{remaining} cykli")
-                                else:
-                                    last = datetime.strptime(interval.last_service, "%Y-%m-%d").date()
-                                    next_date = add_months(last, interval.interval)
-                                    days = (next_date - datetime.now().date()).days
-                                    st.metric("Następny termin", next_date.strftime("%d.%m.%Y"))
-                                    st.metric("Pozostało", f"{days} dni")
-                            
-                            with col_b:
-                                st.metric("Ostatni serwis", interval.last_service)
-                                st.metric("Status", get_status_label(status))
-                            
-                            st.progress(progress)
-                            
-                            # Prognoza
-                            if interval.type == 'cycles' and machine['avg_daily_cycles'] > 0:
-                                remaining = interval.interval - interval.current_value
-                                if remaining > 0:
-                                    days_to_service = int(remaining / machine['avg_daily_cycles'])
-                                    service_date = get_next_workday(datetime.now().date(), days_to_service)
-                                    st.info(f"📅 Estymowany termin serwisu: **{service_date.strftime('%d.%m.%Y')}** (za ~{days_to_service} dni roboczych)")
+                                    if remaining > 0:
+                                        days_to_service = int(remaining / machine['avg_daily_cycles'])
+                                        service_date = get_next_workday(datetime.now().date(), days_to_service)
+                                        st.info(f"📅 Estymowany termin serwisu: **{service_date.strftime('%d.%m.%Y')}** (za ~{days_to_service} dni roboczych)")
+                        except:
+                            pass
                 
                 st.markdown("---")
                 
