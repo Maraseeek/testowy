@@ -1,12 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import calendar
 from dateutil.relativedelta import relativedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
+import shutil
 
 # --- KONFIGURACJA STRONY ---
 st.set_page_config(
@@ -24,11 +26,13 @@ class MaintenanceSystem:
         self.db_file = self.data_dir / "database.json"
         self.history_file = self.data_dir / "history.json"
         self.backup_dir = self.data_dir / "backups"
+        self.docs_dir = self.data_dir / "dokumentacja"
         self._ensure_directories()
         
     def _ensure_directories(self):
         self.data_dir.mkdir(exist_ok=True)
         self.backup_dir.mkdir(exist_ok=True)
+        self.docs_dir.mkdir(exist_ok=True)
 
     def load_data(self) -> Dict:
         if not self.db_file.exists(): return self._get_initial_data()
@@ -51,40 +55,65 @@ class MaintenanceSystem:
             with open(self.history_file, 'r', encoding='utf-8') as f: return json.load(f)
         except: return []
 
-    def log_event(self, machine_name: str, action: str):
+    def log_event(self, machine_name: str, action: str, user: str = "System"):
         history = self.load_history()
         history.insert(0, {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "machine": machine_name, "action": action
+            "machine": machine_name, "action": action, "user": user
         })
         with open(self.history_file, 'w', encoding='utf-8') as f:
-            json.dump(history[:500], f, indent=2, ensure_ascii=False)
+            json.dump(history[:1000], f, indent=2, ensure_ascii=False)
         if 'history' in st.session_state: st.session_state.history = history
 
     def create_backup(self):
         if not self.db_file.exists(): return False
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         try:
-            with open(self.db_file, 'r', encoding='utf-8') as src: content = src.read()
-            with open(self.backup_dir / f"backup_{ts}.json", 'w', encoding='utf-8') as dst: dst.write(content)
+            shutil.copy2(self.db_file, self.backup_dir / f"backup_{ts}.json")
+            # Rotacja (10 ostatnich)
+            backups = sorted(self.backup_dir.glob("backup_*.json"))
+            if len(backups) > 10:
+                for b in backups[:-10]: b.unlink()
+            return True
+        except: return False
+    
+    def save_document(self, machine_id: str, uploaded_file) -> Optional[str]:
+        """Zapisuje plik fizycznie na dysku"""
+        try:
+            m_dir = self.docs_dir / machine_id
+            m_dir.mkdir(exist_ok=True)
+            file_path = m_dir / uploaded_file.name
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            return uploaded_file.name
+        except Exception as e:
+            st.error(f"Błąd zapisu pliku: {e}")
+            return None
+
+    def delete_document(self, machine_id: str, filename: str):
+        try:
+            file_path = self.docs_dir / machine_id / filename
+            if file_path.exists(): file_path.unlink()
             return True
         except: return False
 
     def _get_initial_data(self) -> Dict: return {"machines": []}
 
     def _migrate_data(self, data: Dict) -> Dict:
-        # Prosta migracja struktur danych
         for m in data.get('machines', []):
             if 'daily_cycles' not in m: m['daily_cycles'] = {}
             if 'documents' not in m: m['documents'] = []
             if 'avg_daily_cycles' not in m: m['avg_daily_cycles'] = 0
-            # Przelicz średnią jeśli jest 0 a są dane
             if m['avg_daily_cycles'] == 0 and m['daily_cycles']:
-                cycles = list(m['daily_cycles'].values())
-                m['avg_daily_cycles'] = sum(cycles) / len(cycles) if cycles else 0
+                 vals = list(m['daily_cycles'].values())
+                 m['avg_daily_cycles'] = int(sum(vals) / len(vals))
         return data
 
-class Logic:
+class MaintenanceLogic:
+    @staticmethod
+    def is_weekend(date_obj):
+        return date_obj.weekday() >= 5
+
     @staticmethod
     def get_status(interval: Dict) -> int:
         """0=OK, 1=Warning, 2=Critical"""
@@ -114,53 +143,96 @@ class Logic:
             return min(elapsed / total, 1.0) if total > 0 else 0
 
     @staticmethod
-    def predict_service_date(interval: Dict, avg_daily: float) -> Optional[str]:
-        """Oblicza przewidywaną datę serwisu dla cykli"""
-        if interval['type'] != 'cycles' or avg_daily <= 0: return None
-        remaining = interval['interval'] - interval['current_value']
-        if remaining <= 0: return "Dzisiaj"
-        days_left = int(remaining / avg_daily)
-        pred_date = datetime.now().date() + timedelta(days=days_left)
-        return f"{pred_date.strftime('%d.%m.%Y')} (za ~{days_left} dni)"
+    def predict_14_days(machine: Dict) -> pd.DataFrame:
+        """Generuje prognozę 14-dniową (roboczą)"""
+        forecast_data = []
+        current_date = datetime.now().date()
+        avg_cycles = machine.get('avg_daily_cycles', 0)
+        
+        workdays = 0
+        i = 1
+        acc_cycles = 0
+        
+        while workdays < 14:
+            day = current_date + timedelta(days=i)
+            i += 1
+            if MaintenanceLogic.is_weekend(day): continue
+            
+            workdays += 1
+            acc_cycles += avg_cycles
+            
+            status = "OK"
+            events = []
+            
+            for interval in machine.get('service_intervals', []):
+                if not interval.get('enabled', True): continue
+                
+                # Check Cycles
+                if interval['type'] == 'cycles':
+                    predicted_val = interval['current_value'] + acc_cycles
+                    if predicted_val >= interval['interval']:
+                        events.append(f"🔴 {interval['name']}")
+                        status = "SERWIS"
+                
+                # Check Time
+                elif interval['type'] == 'time':
+                    last = datetime.strptime(interval['last_service'], "%Y-%m-%d").date()
+                    next_d = last + relativedelta(months=interval['interval'])
+                    if day >= next_d:
+                         events.append(f"🕒 {interval['name']}")
+                         status = "SERWIS" if status != "SERWIS" else status
 
-# --- STYLE CSS (DARK MODE PROFESSIONAL) ---
+            forecast_data.append({
+                "Data": day.strftime("%d.%m (%a)"),
+                "Status": status,
+                "Zdarzenia": ", ".join(events) if events else "-"
+            })
+            
+        return pd.DataFrame(forecast_data)
+
+# --- CSS (High-End Dark UI) ---
 def load_css():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    .stApp { font-family: 'Inter', sans-serif; background: #0e1117; }
+    .stApp { background-color: #0e1117; font-family: 'Inter', sans-serif; }
     
-    /* Custom Headers */
-    h1, h2, h3 { color: #f0f2f6 !important; }
+    /* Karty Maszyn */
+    div[data-testid="stExpander"] {
+        background-color: #1a1c24;
+        border: 1px solid #2d3748;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
     
-    /* Metrics */
+    /* Metryki */
     div[data-testid="stMetric"] {
-        background: #1a1c24; border: 1px solid #2d3748;
-        border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        background-color: #1a1c24;
+        border: 1px solid #333;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
     }
     
-    /* Progress Bars - Custom Colors via Streamlit internal classes hack is hard, 
-       so we rely on native logic but styled container */
+    /* Badges */
+    .badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-ok { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid #22c55e; }
+    .badge-warn { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid #eab308; }
+    .badge-crit { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #dc2626; }
     
-    /* Cards */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #1a1c24; border: 1px solid #2d3748; border-radius: 8px;
-    }
-    
-    /* Status Badges */
-    .badge { padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }
-    .badge-ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
-    .badge-warn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
-    .badge-crit { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #dc2626; }
-    
-    /* Heatmap styling */
+    /* Kalendarz Heatmap */
     .heatmap-cell {
-        width: 100%; height: 40px; border-radius: 4px; display: flex; 
-        align-items: center; justify-content: center; font-size: 0.9em;
-        border: 1px solid #333; transition: 0.2s;
+        width: 100%; height: 35px; border-radius: 4px; display: flex; 
+        align-items: center; justify-content: center; font-size: 0.85em; font-weight: 600;
+        transition: 0.2s; border: 1px solid #2d3748;
     }
-    .heatmap-cell:hover { border-color: #fff; transform: scale(1.05); }
+    .heatmap-cell:hover { transform: scale(1.1); z-index: 10; border-color: white; }
+    
+    /* Progress Bar Hack */
+    .stProgress > div > div > div > div {
+        background-image: linear-gradient(to right, #3b82f6, #60a5fa);
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -170,385 +242,338 @@ def main():
     sys = MaintenanceSystem()
     load_css()
     
-    # Session State Init
     if 'data' not in st.session_state: st.session_state.data = sys.load_data()
     if 'history' not in st.session_state: st.session_state.history = sys.load_history()
     
-    # --- SIDEBAR ---
+    # Sidebar
     with st.sidebar:
-        st.title("🏭 Ziołolek PRO")
-        st.caption("Maintenance Management v3.0")
-        
-        view = st.radio("MENU", 
-            ["📊 Dashboard", "🔧 Karta Maszyny", "⚙️ Konfiguracja & Edycja", "📄 Dokumenty"],
-            label_visibility="collapsed"
-        )
+        st.title("🏭 Ziołolek GIGA")
+        st.caption("System CMMS v4.0")
+        view = st.radio("MENU", ["📊 Dashboard", "🔧 Karta Maszyny", "📄 Dokumentacja", "⚙️ Konfiguracja"], label_visibility="collapsed")
         
         st.divider()
+        if st.button("💾 Zapisz System", type="primary", use_container_width=True):
+            if sys.save_data(st.session_state.data): st.toast("Zapisano pomyślnie!", icon="✅")
         
-        # Szybka statystyka w sidebarze (EXTRA: Wykres kołowy statusów)
-        status_counts = {"OK": 0, "Warning": 0, "Critical": 0}
-        for m in st.session_state.data['machines']:
-            m_stat = 0
-            for i in m.get('service_intervals', []):
-                m_stat = max(m_stat, Logic.get_status(i))
-            if m_stat == 0: status_counts["OK"] += 1
-            elif m_stat == 1: status_counts["Warning"] += 1
-            else: status_counts["Critical"] += 1
-            
-        if sum(status_counts.values()) > 0:
-            df_status = pd.DataFrame([
-                {"Status": "OK", "Count": status_counts["OK"]},
-                {"Status": "Ostrzeżenie", "Count": status_counts["Warning"]},
-                {"Status": "Krytyczne", "Count": status_counts["Critical"]}
-            ])
-            fig_pie = px.pie(df_status, values='Count', names='Status', 
-                             color='Status',
-                             color_discrete_map={"OK":"#22c55e", "Ostrzeżenie":"#f59e0b", "Krytyczne":"#ef4444"},
-                             hole=0.4)
-            fig_pie.update_layout(showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=150, paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_pie, use_container_width=True)
-        
-        st.divider()
-        if st.button("💾 Zapisz Stan Systemu", use_container_width=True, type="primary"):
-            if sys.save_data(st.session_state.data): st.success("Zapisano!")
-        if st.button("📦 Utwórz Kopię Zapasową", use_container_width=True):
-            if sys.create_backup(): st.success("Backup OK!")
+        # Backup Restore (Mini)
+        with st.expander("♻️ Przywracanie"):
+            backups = sorted(sys.backup_dir.glob("backup_*.json"), reverse=True)
+            if backups:
+                b_sel = st.selectbox("Wybierz kopię", [b.name for b in backups], label_visibility="collapsed")
+                if st.button("Wczytaj"):
+                    with open(sys.backup_dir / b_sel, 'r', encoding='utf-8') as f:
+                        st.session_state.data = sys._migrate_data(json.load(f))
+                        sys.save_data(st.session_state.data)
+                    st.success("Przywrócono!")
+                    st.rerun()
 
-    # --- WIDOK: DASHBOARD ---
+    # --- DASHBOARD (Wizualizacja + Karty) ---
     if view == "📊 Dashboard":
         st.title("Panel Zarządzania")
         
-        # KPI Row
-        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-        kpi1.metric("Wszystkie Maszyny", sum(status_counts.values()))
-        kpi2.metric("Wymaga Serwisu", status_counts["Critical"], delta_color="inverse")
-        kpi3.metric("Blisko Terminu", status_counts["Warning"], delta_color="off")
+        # KPI + Wykresy (Naprawione wizualnie)
+        machines = st.session_state.data['machines']
+        crit_count = sum(1 for m in machines for i in m.get('service_intervals',[]) if MaintenanceLogic.get_status(i)==2)
+        warn_count = sum(1 for m in machines for i in m.get('service_intervals',[]) if MaintenanceLogic.get_status(i)==1)
         
-        # EXTRA: Obliczanie całkowitej liczby cykli w systemie
-        total_cycles = sum(sum(m.get('daily_cycles', {}).values()) for m in st.session_state.data['machines'])
-        kpi4.metric("Wykonane Cykle", f"{total_cycles:,}".replace(",", " "))
+        col_kpi, col_chart1, col_chart2 = st.columns([1, 2, 2])
         
+        with col_kpi:
+            st.metric("Maszyny", len(machines))
+            st.metric("Krytyczne", crit_count, delta_color="inverse")
+            st.metric("Ostrzeżenia", warn_count, delta_color="off")
+            
+        with col_chart1:
+            # Status Donut Chart (Plotly)
+            status_data = {"OK": 0, "Warning": 0, "Critical": 0}
+            for m in machines:
+                m_stat = max([MaintenanceLogic.get_status(i) for i in m.get('service_intervals',[])] or [0])
+                if m_stat == 0: status_data["OK"] += 1
+                elif m_stat == 1: status_data["Warning"] += 1
+                else: status_data["Critical"] += 1
+            
+            fig_pie = px.pie(values=list(status_data.values()), names=list(status_data.keys()), hole=0.6,
+                             color=list(status_data.keys()),
+                             color_discrete_map={"OK":"#22c55e", "Warning":"#eab308", "Critical":"#ef4444"})
+            fig_pie.update_layout(showlegend=False, margin=dict(t=30, b=0, l=0, r=0), height=200, 
+                                  paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                  annotations=[dict(text=f"{len(machines)}", x=0.5, y=0.5, font_size=20, showarrow=False, font_color="white")])
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.caption("Stan techniczny floty")
+
+        with col_chart2:
+            # Cykle Bar Chart
+            top_m = sorted(machines, key=lambda x: x.get('avg_daily_cycles', 0), reverse=True)[:5]
+            if top_m:
+                df_bar = pd.DataFrame({"Maszyna": [m['name'] for m in top_m], "Śr. Cykle": [m.get('avg_daily_cycles', 0) for m in top_m]})
+                fig_bar = px.bar(df_bar, x="Maszyna", y="Śr. Cykle", color="Śr. Cykle", color_continuous_scale="bluyl")
+                fig_bar.update_layout(margin=dict(t=10, b=0, l=0, r=0), height=200, 
+                                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                      xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#333'))
+                st.plotly_chart(fig_bar, use_container_width=True)
+                st.caption("Najbardziej obciążone maszyny")
+
         st.divider()
-        
-        # Lista maszyn z paskami postępu
         st.subheader("Status Floty")
         
-        if not st.session_state.data['machines']:
-            st.info("Brak maszyn. Przejdź do Konfiguracji.")
-        
+        # Grid Kart Maszyn (UI ze zdjęcia)
         cols = st.columns(2)
-        for idx, m in enumerate(st.session_state.data['machines']):
-            # Oblicz ogólny status maszyny
-            m_max_status = 0
-            for i in m.get('service_intervals', []):
-                m_max_status = max(m_max_status, Logic.get_status(i))
-            
-            badge_cls = ["badge-ok", "badge-warn", "badge-crit"][m_max_status]
-            badge_txt = ["SPRAWNA", "UWAGA", "SERWIS!"][m_max_status]
-            border_col = "red" if m_max_status == 2 else "orange" if m_max_status == 1 else "grey"
+        for idx, m in enumerate(machines):
+            m_stat = max([MaintenanceLogic.get_status(i) for i in m.get('service_intervals',[])] or [0])
+            badge_cls = ["badge-ok", "badge-warn", "badge-crit"][m_stat]
+            badge_txt = ["SPRAWNA", "UWAGA", "SERWIS!"][m_stat]
             
             with cols[idx % 2]:
-                with st.expander(f"**{m['name']}** |  {m['location']}", expanded=(m_max_status > 0)):
-                    st.markdown(f"<span class='badge {badge_cls}'>{badge_txt}</span>", unsafe_allow_html=True)
+                with st.expander(f"**{m['name']}** | {m['location']}", expanded=(m_stat > 0)):
+                    # Header Karty
+                    c_h1, c_h2 = st.columns([3, 1])
+                    c_h1.caption(f"Model: {m['model']}")
+                    c_h2.markdown(f"<span class='badge {badge_cls}'>{badge_txt}</span>", unsafe_allow_html=True)
+                    
                     st.write("")
                     
-                    # Tabela interwałów z paskami
+                    # Interwały (Paski ze zdjęcia)
                     for i in m.get('service_intervals', []):
-                        if i.get('enabled', True):
-                            prog = Logic.get_progress(i)
-                            stat = Logic.get_status(i)
-                            color_emoji = "🔴" if stat==2 else "🟡" if stat==1 else "🟢"
+                        if not i.get('enabled', True): continue
+                        stat = MaintenanceLogic.get_status(i)
+                        prog = MaintenanceLogic.get_progress(i)
+                        
+                        icon = "🔴" if stat==2 else "🟡" if stat==1 else "🟢"
+                        
+                        # Wiersz nagłówka interwału
+                        ci1, ci2 = st.columns([2, 1])
+                        ci1.markdown(f"{icon} **{i['name']}**")
+                        
+                        if i['type'] == 'cycles':
+                            ci2.caption(f"📅 Cykli: {i['current_value']}/{i['interval']}")
+                            st.progress(prog)
+                        else:
+                            # Obliczanie daty
+                            last = datetime.strptime(i['last_service'], "%Y-%m-%d").date()
+                            next_d = last + relativedelta(months=i['interval'])
+                            days_left = (next_d - datetime.now().date()).days
                             
-                            c1, c2 = st.columns([3, 1])
-                            c1.caption(f"{color_emoji} **{i['name']}**")
-                            
-                            if i['type'] == 'cycles':
-                                val_text = f"{i['current_value']} / {i['interval']}"
-                                # EXTRA: Predykcja
-                                pred = Logic.predict_service_date(i, m.get('avg_daily_cycles', 0))
-                                if pred: c2.caption(f"📅 {pred}")
-                            else:
-                                val_text = f"Ost: {i['last_service']}"
-                                # Obliczanie następnej daty
-                                last = datetime.strptime(i['last_service'], "%Y-%m-%d").date()
-                                next_d = last + relativedelta(months=i['interval'])
-                                c2.caption(f"📅 {next_d.strftime('%d.%m.%Y')}")
-
-                            st.progress(prog, text=val_text)
+                            ci2.caption(f"📅 {next_d} ({days_left} dni)")
+                            st.progress(prog)
                     
-                    if st.button("Przejdź do karty", key=f"btn_goto_{idx}"):
-                        st.session_state.goto_machine = m['id']
-                        st.info("Przełącz widok na 'Karta Maszyny'")
+                    if st.button("Przejdź do karty", key=f"go_{m['id']}"):
+                        st.session_state.goto_id = m['id']
+                        # Hack to switch tabs
+                        st.info("Przełącz na zakładkę 'Karta Maszyny' w menu bocznym")
 
-    # --- WIDOK: KARTA MASZYNY ---
+    # --- KARTA MASZYNY (Szczegóły + Prognozy) ---
     elif view == "🔧 Karta Maszyny":
-        st.title("Centrum Operacyjne")
-        
         machines = st.session_state.data['machines']
-        if not machines: st.warning("Brak maszyn."); st.stop()
+        if not machines: st.warning("Brak maszyn"); st.stop()
         
-        # Wybór maszyny
-        opts = {f"[{m['location']}] {m['name']}": idx for idx, m in enumerate(machines)}
-        sel_idx = st.selectbox("Wybierz maszynę:", list(opts.keys()), key="sel_machine_card")
-        machine = machines[opts[sel_idx]]
+        # Auto-select from Dashboard
+        def_idx = 0
+        if 'goto_id' in st.session_state:
+            for i, m in enumerate(machines):
+                if m['id'] == st.session_state.goto_id: def_idx = i; break
         
-        col_main, col_cal = st.columns([1, 2])
+        names = [f"{m['name']} ({m['location']})" for m in machines]
+        sel_name = st.selectbox("Wybierz maszynę", names, index=def_idx)
+        m = machines[names.index(sel_name)]
         
-        with col_main:
-            st.subheader("🛠️ Serwis i Operacje")
-            
+        st.title(f"{m['name']}")
+        
+        col_op, col_anal = st.columns([1, 2])
+        
+        # Panel Operacyjny (Lewa)
+        with col_op:
             with st.container(border=True):
-                st.markdown("#### 1. Rejestracja Pracy")
-                col_inp1, col_inp2 = st.columns(2)
-                d_input = col_inp1.date_input("Data", datetime.now())
-                c_input = col_inp2.number_input("Cykle", min_value=1, value=100)
-                
-                if st.button("➕ Dodaj przebieg", use_container_width=True, type="primary"):
-                    d_str = str(d_input)
-                    machine['daily_cycles'][d_str] = machine['daily_cycles'].get(d_str, 0) + c_input
-                    # Aktualizacja średniej
-                    cycles_hist = list(machine['daily_cycles'].values())
-                    machine['avg_daily_cycles'] = sum(cycles_hist) / len(cycles_hist)
-                    # Aktualizacja liczników
-                    for i in machine['service_intervals']:
-                        if i['type'] == 'cycles' and i.get('enabled'):
-                            i['current_value'] += c_input
+                st.subheader("📝 Rejestracja")
+                d_in = st.date_input("Data", datetime.now())
+                c_in = st.number_input("Cykle", 1, value=100)
+                if st.button("Dodaj przebieg", type="primary", use_container_width=True):
+                    d_s = str(d_in)
+                    m['daily_cycles'][d_s] = m['daily_cycles'].get(d_s, 0) + c_in
+                    
+                    # Update average
+                    vals = list(m['daily_cycles'].values())
+                    m['avg_daily_cycles'] = int(sum(vals)/len(vals))
+                    
+                    # Update intervals
+                    for i in m['service_intervals']:
+                        if i['type'] == 'cycles': i['current_value'] += c_in
+                    
                     sys.save_data(st.session_state.data)
-                    sys.log_event(machine['name'], f"Dodano {c_input} cykli")
                     st.success("Zapisano!")
                     st.rerun()
 
             st.write("")
-            
             with st.container(border=True):
-                st.markdown("#### 2. Zarządzanie Interwałami")
-                st.info("Tutaj możesz zresetować interwał lub zmienić datę ostatniego przeglądu.")
-                
-                for i in machine['service_intervals']:
-                    with st.expander(f"{i['name']} ({i['type']})"):
-                        c_a, c_b = st.columns(2)
-                        
-                        # Edycja i Reset
-                        if i['type'] == 'cycles':
-                            curr = c_a.number_input(f"Stan licznika", value=i['current_value'], key=f"cnt_{machine['id']}_{i['name']}")
-                            if curr != i['current_value']:
-                                i['current_value'] = curr
-                                sys.save_data(st.session_state.data) # Auto-save przy zmianie
-                                
-                            if c_b.button("Zeruj licznik", key=f"rst_c_{machine['id']}_{i['name']}"):
-                                i['current_value'] = 0
-                                sys.save_data(st.session_state.data)
-                                sys.log_event(machine['name'], f"Reset: {i['name']}")
-                                st.rerun()
-                        else:
-                            # TO CZEGO BRAKOWAŁO: Edycja daty ostatniego serwisu
-                            last_date_obj = datetime.strptime(i['last_service'], "%Y-%m-%d").date()
-                            new_date = c_a.date_input("Ostatni serwis", last_date_obj, key=f"date_{machine['id']}_{i['name']}")
-                            
-                            if str(new_date) != i['last_service']:
-                                i['last_service'] = str(new_date)
-                                sys.save_data(st.session_state.data)
-                                st.toast("Zaktualizowano datę!")
-                                
-                            if c_b.button("Potwierdź Przegląd (Dziś)", key=f"rst_t_{machine['id']}_{i['name']}"):
-                                i['last_service'] = str(datetime.now().date())
-                                sys.save_data(st.session_state.data)
-                                sys.log_event(machine['name'], f"Wykonano przegląd: {i['name']}")
-                                st.rerun()
+                st.subheader("🛠️ Szybki Serwis")
+                for i in m.get('service_intervals', []):
+                    if not i.get('enabled'): continue
+                    if st.button(f"Reset: {i['name']}", key=f"rst_{i['name']}"):
+                        if i['type'] == 'cycles': i['current_value'] = 0
+                        i['last_service'] = str(datetime.now().date())
+                        sys.save_data(st.session_state.data)
+                        sys.log_event(m['name'], f"Serwis: {i['name']}")
+                        st.rerun()
 
-        with col_cal:
-            st.subheader("📅 Kalendarz i Analityka")
+        # Panel Analityczny (Prawa)
+        with col_anal:
+            tab_cal, tab_fore = st.tabs(["📅 Kalendarz", "🔮 Prognoza 14-dni"])
             
-            # EXTRA: Wykres przebiegu dziennego (Bar Chart)
-            daily_data = machine.get('daily_cycles', {})
-            if daily_data:
-                # Sortowanie i ograniczenie do 30 dni
-                sorted_dates = sorted(daily_data.keys(), reverse=True)[:30]
-                df_chart = pd.DataFrame({
-                    "Data": sorted_dates,
-                    "Cykle": [daily_data[d] for d in sorted_dates]
-                }).sort_values("Data")
+            with tab_cal:
+                # Heatmapa (Better Logic)
+                now = datetime.now()
+                cal = calendar.monthcalendar(now.year, now.month)
+                st.markdown(f"**{calendar.month_name[now.month]} {now.year}**")
                 
-                fig = px.bar(df_chart, x="Data", y="Cykle", title="Dzienne obciążenie (Ostatnie 30 dni)",
-                             color="Cykle", color_continuous_scale="bluyl")
-                fig.update_layout(height=250, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Brak danych historycznych do wyświetlenia wykresu.")
-
-            # Heatmapa (uproszczona wizualnie)
-            curr_y = datetime.now().year
-            curr_m = datetime.now().month
-            cal = calendar.monthcalendar(curr_y, curr_m)
-            
-            st.write(f"**{calendar.month_name[curr_m]} {curr_y}**")
-            cols = st.columns(7)
-            days_head = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
-            for idx, d in enumerate(days_head): cols[idx].caption(d)
-            
-            for week in cal:
                 cols = st.columns(7)
-                for idx, day in enumerate(week):
-                    if day == 0: 
-                        cols[idx].write("")
-                        continue
-                    
-                    d_str = f"{curr_y}-{curr_m:02d}-{day:02d}"
-                    cyc = machine['daily_cycles'].get(d_str, 0)
-                    
-                    bg = "#1a1c24"
-                    if cyc > 0: bg = "#1e3a8a" if cyc < 100 else "#1d4ed8" if cyc < 500 else "#2563eb"
-                    border = "1px solid #fbbf24" if d_str == str(datetime.now().date()) else "1px solid #333"
-                    
-                    cols[idx].markdown(f"""
-                    <div style="background:{bg}; height:40px; border-radius:4px; border:{border}; 
-                    display:flex; align-items:center; justify-content:center; font-size:0.8em;" title="Cykle: {cyc}">
-                        {day}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-    # --- WIDOK: KONFIGURACJA (PEŁNA EDYCJA) ---
-    elif view == "⚙️ Konfiguracja & Edycja":
-        st.title("Panel Administracyjny")
-        
-        tab1, tab2 = st.tabs(["🏭 Zarządzanie Maszynami", "➕ Dodaj Nową"])
-        
-        with tab1:
-            st.info("💡 Rozwiń maszynę, aby edytować jej nazwę, model lub interwały.")
-            
-            for idx, m in enumerate(st.session_state.data['machines']):
-                with st.expander(f"EDYCJA: {m['name']} ({m['model']})"):
-                    # Edycja danych podstawowych
-                    c1, c2, c3 = st.columns(3)
-                    new_name = c1.text_input("Nazwa", m['name'], key=f"ed_n_{idx}")
-                    new_loc = c2.text_input("Lokalizacja", m['location'], key=f"ed_l_{idx}")
-                    new_mod = c3.text_input("Model", m['model'], key=f"ed_m_{idx}")
-                    
-                    if new_name != m['name'] or new_loc != m['location'] or new_mod != m['model']:
-                        m['name'] = new_name
-                        m['location'] = new_loc
-                        m['model'] = new_mod
-                        sys.save_data(st.session_state.data)
-                        st.toast("Zapisano zmiany w nagłówku!")
-
-                    st.markdown("---")
-                    st.markdown("**Interwały Serwisowe:**")
-                    
-                    # Tabela interwałów do edycji
-                    if not m['service_intervals']: st.caption("Brak zdefiniowanych interwałów.")
-                    
-                    intervals_to_remove = []
-                    for i_idx, interval in enumerate(m['service_intervals']):
-                        col_a, col_b, col_c, col_d = st.columns([3, 2, 2, 1])
-                        
-                        # Edycja nazwy interwału
-                        int_name = col_a.text_input("Nazwa czynności", interval['name'], key=f"int_n_{idx}_{i_idx}")
-                        if int_name != interval['name']:
-                            interval['name'] = int_name
-                            sys.save_data(st.session_state.data)
-                        
-                        # Edycja limitu
-                        if interval['type'] == 'cycles':
-                            int_limit = col_b.number_input("Limit (cykle)", value=interval['interval'], key=f"int_l_{idx}_{i_idx}")
-                        else:
-                            int_limit = col_b.number_input("Limit (miesiące)", value=interval['interval'], key=f"int_l_{idx}_{i_idx}")
-                            
-                        if int_limit != interval['interval']:
-                            interval['interval'] = int_limit
-                            sys.save_data(st.session_state.data)
-                        
-                        # Przełącznik aktywności
-                        is_active = col_c.checkbox("Aktywny", value=interval.get('enabled', True), key=f"int_e_{idx}_{i_idx}")
-                        if is_active != interval.get('enabled', True):
-                            interval['enabled'] = is_active
-                            sys.save_data(st.session_state.data)
-                            
-                        # Usuwanie
-                        if col_d.button("🗑️", key=f"del_int_{idx}_{i_idx}"):
-                            intervals_to_remove.append(i_idx)
-                    
-                    # Aplikacja usuwania
-                    if intervals_to_remove:
-                        for i_rem in sorted(intervals_to_remove, reverse=True):
-                            del m['service_intervals'][i_rem]
-                        sys.save_data(st.session_state.data)
-                        st.rerun()
-                        
-                    st.markdown("---")
-                    
-                    # Dodawanie nowego interwału do tej maszyny
-                    with st.form(key=f"add_int_form_{idx}"):
-                        c_new1, c_new2, c_new3 = st.columns([3, 2, 2])
-                        n_i_name = c_new1.text_input("Nowa czynność")
-                        n_i_type = c_new2.selectbox("Typ", ["cycles", "time"])
-                        n_i_val = c_new3.number_input("Wartość", min_value=1, value=100)
-                        if st.form_submit_button("➕ Dodaj Interwał"):
-                            m['service_intervals'].append({
-                                "name": n_i_name, "type": n_i_type, "interval": n_i_val,
-                                "current_value": 0, "last_service": str(datetime.now().date()), "enabled": True
-                            })
-                            sys.save_data(st.session_state.data)
-                            st.rerun()
-
-                    # Usuwanie maszyny
-                    if st.button("❌ Usuń Maszynę Całkowicie", key=f"del_mach_{idx}"):
-                        st.session_state.data['machines'].pop(idx)
-                        sys.save_data(st.session_state.data)
-                        st.rerun()
-
-        with tab2:
-            st.subheader("Kreator Nowej Maszyny")
-            with st.form("create_machine"):
-                new_m_name = st.text_input("Nazwa Maszyny")
-                new_m_loc = st.text_input("Lokalizacja (Hala/Linia)")
-                new_m_model = st.text_input("Model/Numer Seryjny")
+                for d in ['Pn','Wt','Śr','Cz','Pt','So','Nd']: cols[0].write(d) # Hack header in 1st iter? No.
                 
-                if st.form_submit_button("Utwórz Maszynę"):
-                    new_id = f"M{len(st.session_state.data['machines'])+1:04d}"
-                    st.session_state.data['machines'].append({
-                        "id": new_id,
-                        "name": new_m_name,
-                        "location": new_m_loc,
-                        "model": new_m_model,
-                        "daily_cycles": {},
-                        "avg_daily_cycles": 0,
-                        "service_intervals": [],
-                        "documents": []
+                # Render Grid
+                for week in cal:
+                    cc = st.columns(7)
+                    for i, day in enumerate(week):
+                        if day == 0: continue
+                        d_str = f"{now.year}-{now.month:02d}-{day:02d}"
+                        cyc = m['daily_cycles'].get(d_str, 0)
+                        
+                        # Color logic
+                        bg = "#1a1c24"
+                        if cyc > 0: bg = "#1e3a8a" if cyc < m.get('avg_daily_cycles', 100) else "#2563eb"
+                        border = "2px solid #eab308" if d_str == str(now.date()) else "1px solid #333"
+                        
+                        cc[i].markdown(f"""
+                        <div class='heatmap-cell' style='background:{bg}; border:{border}' title='{cyc} cykli'>
+                            {day}<br><span style='font-size:0.6em; opacity:0.7'>{cyc if cyc>0 else ''}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            with tab_fore:
+                # 14-Day Forecast Logic (From Claude)
+                if m.get('avg_daily_cycles', 0) > 0:
+                    df_pred = MaintenanceLogic.predict_14_days(m)
+                    
+                    def style_df(v):
+                        return ['background-color: rgba(239, 68, 68, 0.2); color: #fca5a5' if 'SERWIS' in r['Status'] else '' for r in df_pred.to_dict('records')]
+
+                    st.dataframe(df_pred, use_container_width=True, hide_index=True, height=400)
+                else:
+                    st.info("Za mało danych o cyklach, aby generować prognozę.")
+
+    # --- DOKUMENTACJA (Pełna obsługa plików) ---
+    elif view == "📄 Dokumentacja":
+        st.title("Repozytorium Plików")
+        machines = st.session_state.data['machines']
+        
+        m_sel = st.selectbox("Wybierz maszynę", [m['name'] for m in machines])
+        curr_m = next(m for m in machines if m['name'] == m_sel)
+        
+        c1, c2 = st.columns([1, 2])
+        
+        with c1:
+            st.subheader("Upload")
+            up_file = st.file_uploader("Wybierz plik (PDF, JPG)")
+            desc = st.text_input("Opis")
+            if st.button("Wgraj", type="primary") and up_file:
+                fname = sys.save_document(curr_m['id'], up_file)
+                if fname:
+                    curr_m['documents'].append({
+                        "filename": fname, "desc": desc, "date": str(datetime.now().date())
                     })
                     sys.save_data(st.session_state.data)
-                    st.success("Maszyna dodana!")
+                    st.success("Wgrano!")
                     st.rerun()
-
-    # --- WIDOK: DOKUMENTACJA (Uproszczona) ---
-    elif view == "📄 Dokumenty":
-        st.title("Repozytorium Plików")
-        st.caption("Symulacja systemu plików")
         
-        machines = st.session_state.data['machines']
-        if machines:
-            sel_m = st.selectbox("Maszyna", [m['name'] for m in machines])
-            curr_m = next(m for m in machines if m['name'] == sel_m)
+        with c2:
+            st.subheader("Pliki")
+            if not curr_m.get('documents'): st.info("Brak dokumentów")
             
-            up_file = st.file_uploader("Wgraj dokumentację (PDF, JPG)")
-            up_desc = st.text_input("Opis pliku")
-            
-            if st.button("Zapisz w rejestrze") and up_file:
-                curr_m['documents'].append({
-                    "filename": up_file.name,
-                    "description": up_desc,
-                    "date": str(datetime.now().date())
-                })
-                sys.save_data(st.session_state.data)
-                st.success("Plik dodany do rejestru!")
-            
-            st.markdown("### Dostępne pliki:")
-            for doc in curr_m.get('documents', []):
+            for idx, doc in enumerate(curr_m.get('documents', [])):
                 with st.container(border=True):
-                    c1, c2 = st.columns([4, 1])
-                    c1.write(f"📄 **{doc['description']}**")
-                    c1.caption(f"{doc['filename']} | {doc['date']}")
-                    c2.button("Pobierz", key=f"dl_{doc['filename']}") # Placeholder button
+                    dc1, dc2, dc3 = st.columns([3, 1, 1])
+                    dc1.markdown(f"📄 **{doc['desc']}**")
+                    dc1.caption(f"{doc['filename']} | {doc['date']}")
+                    
+                    # Download Button Logic (Reading file)
+                    f_path = sys.docs_dir / curr_m['id'] / doc['filename']
+                    if f_path.exists():
+                        with open(f_path, "rb") as f:
+                            dc2.download_button("📥", f.read(), file_name=doc['filename'], key=f"dl_{idx}")
+                    else:
+                        dc2.error("Brak pliku")
+                        
+                    if dc3.button("🗑️", key=f"del_{idx}"):
+                        sys.delete_document(curr_m['id'], doc['filename'])
+                        curr_m['documents'].pop(idx)
+                        sys.save_data(st.session_state.data)
+                        st.rerun()
+
+    # --- KONFIGURACJA (Hasło + CRUD) ---
+    elif view == "⚙️ Konfiguracja":
+        st.title("Panel Administratora")
+        
+        if not st.session_state.get('auth', False):
+            pwd = st.text_input("Hasło", type="password")
+            if st.button("Zaloguj"):
+                if pwd == "1111": st.session_state.auth = True; st.rerun()
+                else: st.error("Złe hasło")
+            st.stop()
+            
+        if st.button("Wyloguj"): st.session_state.auth = False; st.rerun()
+        
+        tab_m, tab_new = st.tabs(["Edycja Maszyn", "Nowa Maszyna"])
+        
+        with tab_m:
+            for i, m in enumerate(st.session_state.data['machines']):
+                with st.expander(f"Edycja: {m['name']}"):
+                    c1, c2 = st.columns(2)
+                    m['name'] = c1.text_input("Nazwa", m['name'], key=f"nm_{i}")
+                    m['location'] = c2.text_input("Lokalizacja", m['location'], key=f"loc_{i}")
+                    
+                    st.subheader("Interwały")
+                    # CRUD Interwałów
+                    to_del = []
+                    for j, interval in enumerate(m['service_intervals']):
+                        cc1, cc2, cc3, cc4 = st.columns([2, 1, 1, 1])
+                        interval['name'] = cc1.text_input("Czynność", interval['name'], key=f"in_{i}_{j}")
+                        interval['interval'] = cc2.number_input("Limit", value=interval['interval'], key=f"iv_{i}_{j}")
+                        interval['enabled'] = cc3.checkbox("Aktywny", interval.get('enabled', True), key=f"ie_{i}_{j}")
+                        if cc4.button("🗑️", key=f"id_{i}_{j}"): to_del.append(j)
+                    
+                    if to_del:
+                        for idx in sorted(to_del, reverse=True): del m['service_intervals'][idx]
+                        st.rerun()
+                        
+                    # Dodaj interwał
+                    with st.form(f"add_int_{i}"):
+                        fn = st.text_input("Nowa czynność")
+                        ft = st.selectbox("Typ", ["cycles", "time"])
+                        fv = st.number_input("Wartość", 100)
+                        if st.form_submit_button("Dodaj"):
+                            m['service_intervals'].append({
+                                "name": fn, "type": ft, "interval": fv, 
+                                "current_value": 0, "last_service": str(datetime.now().date()), "enabled": True
+                            })
+                            st.rerun()
+                            
+                    st.divider()
+                    if st.button("USUŃ MASZYNĘ", key=f"del_m_{i}"):
+                        st.session_state.data['machines'].pop(i)
+                        sys.save_data(st.session_state.data)
+                        st.rerun()
+
+        with tab_new:
+            with st.form("new_m"):
+                nn = st.text_input("Nazwa")
+                nl = st.text_input("Lokalizacja")
+                nm = st.text_input("Model")
+                if st.form_submit_button("Utwórz"):
+                    st.session_state.data['machines'].append({
+                        "id": f"M{len(st.session_state.data['machines']):03d}",
+                        "name": nn, "location": nl, "model": nm,
+                        "daily_cycles": {}, "documents": [], "service_intervals": [], "avg_daily_cycles": 0
+                    })
+                    sys.save_data(st.session_state.data)
+                    st.success("Utworzono!")
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
